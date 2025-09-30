@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ppgarage_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: ppgarageGastos
+      MYSQL_USER: ppuser
+      MYSQL_PASSWORD: pppass123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./ppdb.sql:/docker-entrypoint-initdb.d/ppdb.sql
+    networks:
+      - ppgarage_network
+
+  webapp:
+    build: .
+    container_name: ppgarage_webapp
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mysql
+    networks:
+      - ppgarage_network
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    command: npm run dev
+volumes:
+  mysql_data:
+
+networks:
+  ppgarage_network:
+    driver: bridge
