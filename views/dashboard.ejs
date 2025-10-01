@@ -975,7 +975,7 @@
             <div class="tab-pane fade" id="configuracion" role="tabpanel">
                 <div class="row">
                     <div class="col-12">
-                        <div class="card">
+                        <div class="card mb-4">
                             <div class="card-header">
                                 <h5 class="card-title mb-0">
                                     <i class="bi bi-currency-dollar"></i> Configuración de Precios
@@ -1079,6 +1079,144 @@
                                         <i class="bi bi-plus-circle"></i> Agregar Nuevo Servicio
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Card para configuración de PDF -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-file-earmark-pdf"></i> Configuración de PDF Presupuesto
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    <strong>Personalización:</strong> Configura aquí el contenido que aparecerá en los PDFs de presupuesto.
+                                </div>
+                                
+                                <form id="formConfiguracionPDF">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="nombreEmpresa" class="form-label">Nombre de la Empresa</label>
+                                            <input type="text" class="form-control" id="nombreEmpresa" placeholder="PPGarage - Car Detailing">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="telefonoEmpresa" class="form-label">Teléfono</label>
+                                            <input type="text" class="form-control" id="telefonoEmpresa" placeholder="+54 11 1234-5678">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="direccionEmpresa" class="form-label">Dirección</label>
+                                            <input type="text" class="form-control" id="direccionEmpresa" placeholder="Tu Dirección, Ciudad">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="emailEmpresa" class="form-label">Email</label>
+                                            <input type="email" class="form-control" id="emailEmpresa" placeholder="contacto@ppgarage.com">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-8 mb-3">
+                                            <label for="encabezadoPresupuesto" class="form-label">Título del Presupuesto</label>
+                                            <input type="text" class="form-control" id="encabezadoPresupuesto" placeholder="Presupuesto de Servicios de Car Detailing">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="validezDias" class="form-label">Validez (días)</label>
+                                            <input type="number" class="form-control" id="validezDias" min="1" max="90" value="15">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="descripcionEmpresa" class="form-label">Descripción de la Empresa</label>
+                                        <textarea class="form-control" id="descripcionEmpresa" rows="2" placeholder="Especialistas en cuidado automotriz con años de experiencia..."></textarea>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="terminosCondiciones" class="form-label">Términos y Condiciones</label>
+                                        <textarea class="form-control" id="terminosCondiciones" rows="4" placeholder="• El presupuesto tiene validez por los días indicados&#10;• Los precios incluyen materiales y mano de obra&#10;• Se requiere 50% de seña para iniciar el trabajo"></textarea>
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <label for="piePagina" class="form-label">Pie de Página</label>
+                                        <textarea class="form-control" id="piePagina" rows="2" placeholder="Gracias por confiar en PPGarage - Su vehículo en las mejores manos"></textarea>
+                                    </div>
+                                    
+                                    <!-- Sección de Personalización Visual -->
+                                    <hr class="my-4">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="bi bi-palette"></i> Personalización Visual
+                                    </h6>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="colorPrimario" class="form-label">Color Principal</label>
+                                            <div class="input-group">
+                                                <input type="color" class="form-control form-control-color" id="colorPrimario" value="#2980b9" title="Seleccionar color principal">
+                                                <input type="text" class="form-control" id="colorPrimarioText" value="#2980b9" placeholder="#2980b9">
+                                            </div>
+                                            <small class="form-text text-muted">Color para encabezados y elementos principales</small>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="colorSecundario" class="form-label">Color Secundario</label>
+                                            <div class="input-group">
+                                                <input type="color" class="form-control form-control-color" id="colorSecundario" value="#34495e" title="Seleccionar color secundario">
+                                                <input type="text" class="form-control" id="colorSecundarioText" value="#34495e" placeholder="#34495e">
+                                            </div>
+                                            <small class="form-text text-muted">Color para texto y elementos secundarios</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-8 mb-3">
+                                            <label for="logoFile" class="form-label">Logo de la Empresa</label>
+                                            <div class="input-group mb-2">
+                                                <input type="file" class="form-control" id="logoFile" accept="image/*">
+                                                <button type="button" class="btn btn-outline-primary" id="btnSubirLogo">
+                                                    <i class="bi bi-cloud-upload"></i> Subir
+                                                </button>
+                                            </div>
+                                            <div id="logoPreview" class="mt-2" style="display: none;">
+                                                <img id="logoImg" src="" alt="Logo actual" style="max-height: 60px; border: 1px solid #ddd; border-radius: 4px;">
+                                                <button type="button" class="btn btn-sm btn-outline-danger ms-2" id="btnEliminarLogo">
+                                                    <i class="bi bi-trash"></i> Eliminar
+                                                </button>
+                                            </div>
+                                            <small class="form-text text-muted">Formato: PNG, JPG o GIF. Tamaño máximo: 5MB. Recomendado: 200x80px</small>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Opciones de Logo</label>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="mostrarLogo">
+                                                <label class="form-check-label" for="mostrarLogo">
+                                                    Mostrar logo en PDF
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Vista previa de colores -->
+                                    <div class="mb-3">
+                                        <label class="form-label">Vista Previa de Colores</label>
+                                        <div class="d-flex gap-3 align-items-center">
+                                            <div class="preview-color-box" id="previewPrimario" style="width: 50px; height: 30px; background-color: #2980b9; border-radius: 4px; border: 1px solid #ddd;"></div>
+                                            <span class="text-muted">Color Principal</span>
+                                            <div class="preview-color-box" id="previewSecundario" style="width: 50px; height: 30px; background-color: #34495e; border-radius: 4px; border: 1px solid #ddd;"></div>
+                                            <span class="text-muted">Color Secundario</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-save"></i> Guardar Configuración
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" id="btnVistaPrevia">
+                                            <i class="bi bi-eye"></i> Vista Previa
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -1544,70 +1682,170 @@
         });
 
         // Generar PDF
-        document.getElementById('generarPDF').addEventListener('click', function() {
+        document.getElementById('generarPDF').addEventListener('click', async function() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
+            
+            // Cargar configuración personalizada
+            let config;
+            try {
+                const response = await fetch('/api/configuracion-pdf');
+                config = await response.json();
+            } catch (error) {
+                console.error('Error cargando configuración:', error);
+                // Usar configuración por defecto
+                config = {
+                    nombre_empresa: 'PPGarage - Car Detailing',
+                    direccion_empresa: 'Tu Dirección, Ciudad',
+                    telefono_empresa: '+54 11 1234-5678',
+                    email_empresa: 'contacto@ppgarage.com',
+                    encabezado_presupuesto: 'Presupuesto de Servicios de Car Detailing',
+                    descripcion_empresa: 'Especialistas en cuidado automotriz.',
+                    terminos_condiciones: '• El presupuesto tiene validez por los días indicados\n• Los precios incluyen materiales y mano de obra\n• Se requiere 50% de seña para iniciar el trabajo',
+                    pie_pagina: 'Gracias por confiar en PPGarage',
+                    validez_dias: 15
+                };
+            }
             
             // Datos del cliente
             const clienteNombre = document.getElementById('clienteNombre').value || 'Cliente';
             const clienteTelefono = document.getElementById('clienteTelefono').value || '';
             const clienteEmail = document.getElementById('clienteEmail').value || '';
             const vehiculo = document.getElementById('vehiculo').value || '';
-            const validez = document.getElementById('validezPresupuesto').value || 15;
+            const validez = document.getElementById('validezPresupuesto').value || config.validez_dias;
             
-            // Configuración de colores y fuentes
-            const colorPrimario = [41, 128, 185]; // Azul
-            const colorSecundario = [52, 73, 94]; // Gris oscuro
+            // Configuración de colores personalizados
+            function hexToRgb(hex) {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? [
+                    parseInt(result[1], 16),
+                    parseInt(result[2], 16),
+                    parseInt(result[3], 16)
+                ] : [41, 128, 185]; // Color por defecto si hay error
+            }
             
-            // Encabezado de la empresa
+            const colorPrimario = hexToRgb(config.color_primario || '#2980b9');
+            const colorSecundario = hexToRgb(config.color_secundario || '#34495e');
+            
+            // Calcular altura dinámica del encabezado basada en la descripción
+            let alturaEncabezado = 45; // Altura mínima
+            
+            // Pre-calcular líneas de descripción para determinar altura necesaria
+            doc.setFontSize(9); // Tamaño de fuente de la descripción
+            const maxWidth = config.mostrar_logo && config.logo_url ? 90 : 115;
+            const descripcionLineas = doc.splitTextToSize(config.descripcion_empresa, maxWidth);
+            
+            // Ajustar altura del encabezado según líneas de descripción
+            if (descripcionLineas.length > 1) {
+                alturaEncabezado = Math.max(45, 30 + (descripcionLineas.length * 4));
+            }
+            
+            // Encabezado de la empresa con altura dinámica
             doc.setFillColor(...colorPrimario);
-            doc.rect(0, 0, 210, 40, 'F');
+            doc.rect(0, 0, 210, alturaEncabezado, 'F');
             
+            // Agregar logo si está configurado
+            if (config.mostrar_logo && config.logo_url) {
+                try {
+                    // Intentar cargar el logo
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    
+                    await new Promise((resolve, reject) => {
+                        img.onload = () => {
+                            try {
+                                // Agregar logo al PDF
+                                doc.addImage(img, 'JPEG', 15, 8, 25, 25);
+                                resolve();
+                            } catch (error) {
+                                console.warn('Error agregando logo al PDF:', error);
+                                resolve(); // Continuar sin logo
+                            }
+                        };
+                        img.onerror = () => {
+                            console.warn('Error cargando logo desde:', config.logo_url);
+                            resolve(); // Continuar sin logo
+                        };
+                        img.src = window.location.origin + config.logo_url;
+                    });
+                    
+                    // Layout con logo - Lado izquierdo
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFontSize(16);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(config.nombre_empresa, 45, 18);
+                    
+                    // Descripción con text wrap - respetando el límite derecho
+                    doc.setFontSize(8);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(descripcionLineas, 45, 25);
+                    
+                } catch (error) {
+                    console.warn('Error con el logo, usando diseño sin logo:', error);
+                    // Usar diseño sin logo
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFontSize(18);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(config.nombre_empresa, 20, 18);
+                    
+                    // Descripción con text wrap - sin logo
+                    doc.setFontSize(9);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(descripcionLineas, 20, 26);
+                }
+            } else {
+                // Diseño sin logo
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(18);
+                doc.setFont('helvetica', 'bold');
+                doc.text(config.nombre_empresa, 20, 18);
+                
+                // Descripción con text wrap - sin logo
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'normal');
+                doc.text(descripcionLineas, 20, 26);
+            }
+            
+            // Información de contacto de la empresa - Lado derecho
             doc.setTextColor(255, 255, 255);
-            doc.setFontSize(24);
-            doc.setFont('helvetica', 'bold');
-            doc.text('PPGARAGE', 20, 25);
-            
-            doc.setFontSize(12);
+            doc.setFontSize(8);
             doc.setFont('helvetica', 'normal');
-            doc.text('Detailing Profesional', 20, 32);
+            doc.text(config.telefono_empresa, 145, 18);
+            doc.text(config.email_empresa, 145, 24);
+            doc.text(config.direccion_empresa, 145, 30);
             
-            // Información de contacto de la empresa
-            doc.setTextColor(...colorSecundario);
-            doc.setFontSize(10);
-            doc.text('Tel: +54 9 XXX XXX-XXXX', 140, 25);
-            doc.text('Email: contacto@ppgarage.com', 140, 30);
-            doc.text('www.ppgarage.com', 140, 35);
-            
-            // Título del documento
+            // Título del documento (posición dinámica)
+            const yTitulo = alturaEncabezado + 15;
             doc.setTextColor(...colorPrimario);
             doc.setFontSize(18);
             doc.setFont('helvetica', 'bold');
-            doc.text('PRESUPUESTO', 20, 55);
+            doc.text(config.encabezado_presupuesto, 20, yTitulo);
             
-            // Información del presupuesto
+            // Información del presupuesto (posición dinámica)
+            const yInfo = yTitulo + 10;
             doc.setTextColor(...colorSecundario);
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
             const fechaActual = new Date().toLocaleDateString();
             const fechaValidez = new Date(Date.now() + validez * 24 * 60 * 60 * 1000).toLocaleDateString();
             
-            doc.text(`Fecha: ${fechaActual}`, 20, 65);
-            doc.text(`Válido hasta: ${fechaValidez}`, 20, 70);
-            doc.text(`Presupuesto #: ${Date.now().toString().slice(-6)}`, 140, 65);
+            doc.text(`Fecha: ${fechaActual}`, 20, yInfo);
+            doc.text(`Válido hasta: ${fechaValidez}`, 20, yInfo + 5);
+            doc.text(`Presupuesto #: ${Date.now().toString().slice(-6)}`, 140, yInfo);
             
-            // Datos del cliente
+            // Datos del cliente (posición dinámica)
+            const yCliente = yInfo + 15;
             doc.setFont('helvetica', 'bold');
-            doc.text('DATOS DEL CLIENTE:', 20, 85);
+            doc.text('DATOS DEL CLIENTE:', 20, yCliente);
             doc.setFont('helvetica', 'normal');
-            doc.text(`Cliente: ${clienteNombre}`, 20, 92);
-            if (clienteTelefono) doc.text(`Teléfono: ${clienteTelefono}`, 20, 97);
-            if (clienteEmail) doc.text(`Email: ${clienteEmail}`, 20, 102);
-            if (vehiculo) doc.text(`Vehículo: ${vehiculo}`, 20, 107);
+            doc.text(`Cliente: ${clienteNombre}`, 20, yCliente + 7);
+            if (clienteTelefono) doc.text(`Teléfono: ${clienteTelefono}`, 20, yCliente + 12);
+            if (clienteEmail) doc.text(`Email: ${clienteEmail}`, 20, yCliente + 17);
+            if (vehiculo) doc.text(`Vehículo: ${vehiculo}`, 20, yCliente + 22);
             
             // Recopilar servicios seleccionados
             const servicios = [];
-            let yPosition = 120;
+            let yPosition = yCliente + 30; // Posición dinámica para la tabla
             
             // Servicios predefinidos
             document.querySelectorAll('#modalPresupuesto input[type="checkbox"]:checked').forEach(checkbox => {
@@ -1665,7 +1903,7 @@
             doc.setTextColor(...colorPrimario);
             doc.text(`TOTAL: $${total.toLocaleString()}`, 140, yPosition);
             
-            // Términos y condiciones
+            // Términos y condiciones personalizados
             yPosition += 20;
             doc.setFontSize(10);
             doc.setFont('helvetica', 'bold');
@@ -1674,23 +1912,20 @@
             
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(9);
-            const terminos = [
-                '• Este presupuesto tiene una validez de ' + validez + ' días.',
-                '• Los precios incluyen materiales y mano de obra.',
-                '• Se requiere un 50% de anticipo para comenzar el trabajo.',
-                '• El trabajo se realiza únicamente con cita previa.',
-                '• No nos hacemos responsables por objetos de valor dejados en el vehículo.',
-                '• Garantía de 7 días en todos nuestros servicios.',
-            ];
             
-            terminos.forEach((termino, index) => {
-                doc.text(termino, 20, yPosition + 8 + (index * 5));
+            // Procesar términos y condiciones personalizados
+            const terminosPersonalizados = config.terminos_condiciones.split('\n');
+            terminosPersonalizados.forEach((termino, index) => {
+                if (termino.trim()) {
+                    doc.text(termino.trim(), 20, yPosition + 8 + (index * 5));
+                }
             });
             
-            // Pie de página
+            // Pie de página personalizado
+            const piePaginaY = Math.max(yPosition + 8 + (terminosPersonalizados.length * 5) + 10, 275);
             doc.setFontSize(8);
             doc.setTextColor(128, 128, 128);
-            doc.text('Gracias por confiar en PPGarage - Detailing Profesional', 20, 280);
+            doc.text(config.pie_pagina, 20, piePaginaY);
             
             // Descargar PDF
             const nombreArchivo = `Presupuesto_${clienteNombre.replace(/\s+/g, '_')}_${fechaActual.replace(/\//g, '-')}.pdf`;
@@ -1991,6 +2226,283 @@
                     alert('Error actualizando servicio');
                 }
             });
+            
+            // =================== CONFIGURACIÓN PDF ===================
+            
+            // Cargar configuración PDF actual
+            async function cargarConfiguracionPDF() {
+                try {
+                    const response = await fetch('/api/configuracion-pdf');
+                    const config = await response.json();
+                    
+                    // Llenar los campos del formulario
+                    document.getElementById('nombreEmpresa').value = config.nombre_empresa || '';
+                    document.getElementById('direccionEmpresa').value = config.direccion_empresa || '';
+                    document.getElementById('telefonoEmpresa').value = config.telefono_empresa || '';
+                    document.getElementById('emailEmpresa').value = config.email_empresa || '';
+                    document.getElementById('encabezadoPresupuesto').value = config.encabezado_presupuesto || '';
+                    document.getElementById('descripcionEmpresa').value = config.descripcion_empresa || '';
+                    document.getElementById('terminosCondiciones').value = config.terminos_condiciones || '';
+                    document.getElementById('piePagina').value = config.pie_pagina || '';
+                    document.getElementById('validezDias').value = config.validez_dias || 15;
+                    
+                    // Campos de personalización visual
+                    document.getElementById('colorPrimario').value = config.color_primario || '#2980b9';
+                    document.getElementById('colorPrimarioText').value = config.color_primario || '#2980b9';
+                    document.getElementById('colorSecundario').value = config.color_secundario || '#34495e';
+                    document.getElementById('colorSecundarioText').value = config.color_secundario || '#34495e';
+                    document.getElementById('mostrarLogo').checked = config.mostrar_logo || false;
+                    
+                    // Mostrar logo actual si existe
+                    if (config.logo_url) {
+                        document.getElementById('logoImg').src = config.logo_url;
+                        document.getElementById('logoPreview').style.display = 'block';
+                    } else {
+                        document.getElementById('logoPreview').style.display = 'none';
+                    }
+                    
+                    // Actualizar vista previa de colores
+                    document.getElementById('previewPrimario').style.backgroundColor = config.color_primario || '#2980b9';
+                    document.getElementById('previewSecundario').style.backgroundColor = config.color_secundario || '#34495e';
+                    
+                } catch (error) {
+                    console.error('Error cargando configuración PDF:', error);
+                }
+            }
+            
+            // Guardar configuración PDF
+            document.getElementById('formConfiguracionPDF').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const configuracion = {
+                    nombre_empresa: document.getElementById('nombreEmpresa').value,
+                    direccion_empresa: document.getElementById('direccionEmpresa').value,
+                    telefono_empresa: document.getElementById('telefonoEmpresa').value,
+                    email_empresa: document.getElementById('emailEmpresa').value,
+                    encabezado_presupuesto: document.getElementById('encabezadoPresupuesto').value,
+                    descripcion_empresa: document.getElementById('descripcionEmpresa').value,
+                    terminos_condiciones: document.getElementById('terminosCondiciones').value,
+                    pie_pagina: document.getElementById('piePagina').value,
+                    validez_dias: parseInt(document.getElementById('validezDias').value),
+                    color_primario: document.getElementById('colorPrimario').value,
+                    color_secundario: document.getElementById('colorSecundario').value,
+                    logo_url: document.getElementById('logoImg').src ? document.getElementById('logoImg').src.split(window.location.origin)[1] || null : null,
+                    mostrar_logo: document.getElementById('mostrarLogo').checked
+                };
+                
+                try {
+                    const response = await fetch('/api/configuracion-pdf', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(configuracion)
+                    });
+                    
+                    if (response.ok) {
+                        alert('Configuración guardada correctamente');
+                    } else {
+                        const error = await response.json();
+                        alert(error.error || 'Error guardando configuración');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error guardando configuración');
+                }
+            });
+            
+            // Cargar configuración al cambiar a la pestaña de configuración
+            document.querySelector('button[data-bs-target="#configuracion"]').addEventListener('click', function() {
+                cargarConfiguracionPDF();
+            });
+            
+            // Vista previa de configuración PDF
+            document.getElementById('btnVistaPrevia').addEventListener('click', function() {
+                const configuracion = {
+                    nombre_empresa: document.getElementById('nombreEmpresa').value || 'PPGarage - Car Detailing',
+                    direccion_empresa: document.getElementById('direccionEmpresa').value || 'Tu Dirección, Ciudad',
+                    telefono_empresa: document.getElementById('telefonoEmpresa').value || '+54 11 1234-5678',
+                    email_empresa: document.getElementById('emailEmpresa').value || 'contacto@ppgarage.com',
+                    encabezado_presupuesto: document.getElementById('encabezadoPresupuesto').value || 'Presupuesto de Servicios',
+                    descripcion_empresa: document.getElementById('descripcionEmpresa').value || 'Especialistas en cuidado automotriz',
+                    terminos_condiciones: document.getElementById('terminosCondiciones').value || 'Términos y condiciones por defecto',
+                    pie_pagina: document.getElementById('piePagina').value || 'Gracias por confiar en nosotros',
+                    validez_dias: parseInt(document.getElementById('validezDias').value) || 15
+                };
+                
+                let preview = `
+                <div class="alert alert-info">
+                    <h5><i class="bi bi-info-circle"></i> Vista Previa de tu PDF</h5>
+                    <hr>
+                    <h6><strong>Encabezado:</strong></h6>
+                    <p><strong>${configuracion.nombre_empresa}</strong><br>
+                    ${configuracion.descripcion_empresa}<br>
+                    ${configuracion.telefono_empresa} | ${configuracion.email_empresa}<br>
+                    ${configuracion.direccion_empresa}</p>
+                    
+                    <h6><strong>Título:</strong></h6>
+                    <p>${configuracion.encabezado_presupuesto}</p>
+                    
+                    <h6><strong>Términos y Condiciones:</strong></h6>
+                    <p style="white-space: pre-line;">${configuracion.terminos_condiciones}</p>
+                    
+                    <h6><strong>Pie de Página:</strong></h6>
+                    <p>${configuracion.pie_pagina}</p>
+                    
+                    <p><small><strong>Validez por defecto:</strong> ${configuracion.validez_dias} días</small></p>
+                </div>
+                `;
+                
+                // Mostrar en un modal o alert
+                const modalHTML = `
+                    <div class="modal fade" id="modalVistaPrevia" tabindex="-1">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Vista Previa - Configuración PDF</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    ${preview}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Remover modal anterior si existe
+                const modalAnterior = document.getElementById('modalVistaPrevia');
+                if (modalAnterior) {
+                    modalAnterior.remove();
+                }
+                
+                // Agregar modal al DOM
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+                
+                // Mostrar modal
+                const modal = new bootstrap.Modal(document.getElementById('modalVistaPrevia'));
+                modal.show();
+            });
+            
+            // Event listeners para sincronizar color pickers
+            document.getElementById('colorPrimario').addEventListener('input', function() {
+                document.getElementById('colorPrimarioText').value = this.value;
+                document.getElementById('previewPrimario').style.backgroundColor = this.value;
+            });
+            
+            document.getElementById('colorPrimarioText').addEventListener('input', function() {
+                if (/^#[0-9A-F]{6}$/i.test(this.value)) {
+                    document.getElementById('colorPrimario').value = this.value;
+                    document.getElementById('previewPrimario').style.backgroundColor = this.value;
+                }
+            });
+            
+            document.getElementById('colorSecundario').addEventListener('input', function() {
+                document.getElementById('colorSecundarioText').value = this.value;
+                document.getElementById('previewSecundario').style.backgroundColor = this.value;
+            });
+            
+            document.getElementById('colorSecundarioText').addEventListener('input', function() {
+                if (/^#[0-9A-F]{6}$/i.test(this.value)) {
+                    document.getElementById('colorSecundario').value = this.value;
+                    document.getElementById('previewSecundario').style.backgroundColor = this.value;
+                }
+            });
+            
+            // =================== UPLOAD DE LOGO ===================
+            
+            // Subir logo
+            document.getElementById('btnSubirLogo').addEventListener('click', async function() {
+                const fileInput = document.getElementById('logoFile');
+                const file = fileInput.files[0];
+                
+                if (!file) {
+                    alert('Por favor selecciona una imagen primero');
+                    return;
+                }
+                
+                // Validar tipo de archivo
+                if (!file.type.startsWith('image/')) {
+                    alert('Solo se permiten archivos de imagen');
+                    return;
+                }
+                
+                // Validar tamaño (5MB máximo)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('El archivo es muy grande. Tamaño máximo: 5MB');
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append('logo', file);
+                
+                try {
+                    this.innerHTML = '<i class="bi bi-hourglass-split"></i> Subiendo...';
+                    this.disabled = true;
+                    
+                    const response = await fetch('/api/upload-logo', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        
+                        // Mostrar preview del logo
+                        document.getElementById('logoImg').src = result.logoUrl;
+                        document.getElementById('logoPreview').style.display = 'block';
+                        document.getElementById('mostrarLogo').checked = true;
+                        
+                        // Limpiar input
+                        fileInput.value = '';
+                        
+                        alert('Logo subido correctamente');
+                    } else {
+                        const error = await response.json();
+                        alert(error.error || 'Error subiendo logo');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error subiendo logo');
+                } finally {
+                    this.innerHTML = '<i class="bi bi-cloud-upload"></i> Subir';
+                    this.disabled = false;
+                }
+            });
+            
+            // Eliminar logo
+            document.getElementById('btnEliminarLogo').addEventListener('click', async function() {
+                if (!confirm('¿Estás seguro de eliminar el logo actual?')) {
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/delete-logo', {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        // Ocultar preview
+                        document.getElementById('logoPreview').style.display = 'none';
+                        document.getElementById('logoImg').src = '';
+                        document.getElementById('mostrarLogo').checked = false;
+                        
+                        alert('Logo eliminado correctamente');
+                    } else {
+                        const error = await response.json();
+                        alert(error.error || 'Error eliminando logo');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error eliminando logo');
+                }
+            });
+            
+            // Cargar configuración al inicio si estamos en la pestaña de configuración
+            if (window.location.hash === '#configuracion') {
+                cargarConfiguracionPDF();
+            }
         });
     </script>
 </body>

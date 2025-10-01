@@ -2,14 +2,48 @@ const express = require('express');
 const mysql = require('mysql2/promise');
 const bodyParser = require('body-parser');
 const path = require('path');
+const multer = require('multer');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Configuración de multer para uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadPath = path.join(__dirname, 'uploads/logos');
+    // Crear directorio si no existe
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    // Generar nombre único para el archivo
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const extension = path.extname(file.originalname);
+    cb(null, 'logo-' + uniqueSuffix + extension);
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB máximo
+  fileFilter: function (req, file, cb) {
+    // Aceptar solo imágenes
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten archivos de imagen'));
+    }
+  }
+});
 
 // Configuración de middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static('public'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Servir archivos subidos
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -458,6 +492,156 @@ app.get('/api/precios-servicios', async (req, res) => {
   } catch (error) {
     console.error('Error obteniendo precios:', error);
     res.status(500).json({ error: 'Error obteniendo precios' });
+  }
+});
+
+// Rutas para configuración del PDF
+app.get('/api/configuracion-pdf', async (req, res) => {
+  try {
+    const connection = await connectDB();
+    const [config] = await connection.execute('SELECT * FROM configuracion_pdf WHERE id = 1');
+    await connection.end();
+    
+    if (config.length > 0) {
+      res.json(config[0]);
+    } else {
+      // Si no existe configuración, crear una por defecto
+      res.json({
+        nombre_empresa: 'PPGarage - Car Detailing',
+        direccion_empresa: 'Tu Dirección, Ciudad',
+        telefono_empresa: '+54 11 1234-5678',
+        email_empresa: 'contacto@ppgarage.com',
+        encabezado_presupuesto: 'Presupuesto de Servicios de Car Detailing',
+        descripcion_empresa: 'Especialistas en cuidado automotriz.',
+        terminos_condiciones: 'Términos y Condiciones:\n• El presupuesto tiene validez por los días indicados\n• Los precios incluyen materiales y mano de obra',
+        pie_pagina: 'Gracias por confiar en PPGarage',
+        validez_dias: 15,
+        color_primario: '#2980b9',
+        color_secundario: '#34495e',
+        logo_url: null,
+        mostrar_logo: false
+      });
+    }
+  } catch (error) {
+    console.error('Error obteniendo configuración PDF:', error);
+    res.status(500).json({ error: 'Error obteniendo configuración' });
+  }
+});
+
+app.put('/api/configuracion-pdf', async (req, res) => {
+  try {
+    const {
+      nombre_empresa,
+      direccion_empresa,
+      telefono_empresa,
+      email_empresa,
+      encabezado_presupuesto,
+      descripcion_empresa,
+      terminos_condiciones,
+      pie_pagina,
+      validez_dias,
+      color_primario,
+      color_secundario,
+      logo_url,
+      mostrar_logo
+    } = req.body;
+
+    const connection = await connectDB();
+    
+    // Verificar si existe configuración
+    const [existing] = await connection.execute('SELECT id FROM configuracion_pdf WHERE id = 1');
+    
+    if (existing.length > 0) {
+      // Actualizar configuración existente
+      await connection.execute(`
+        UPDATE configuracion_pdf SET 
+        nombre_empresa = ?, direccion_empresa = ?, telefono_empresa = ?, email_empresa = ?,
+        encabezado_presupuesto = ?, descripcion_empresa = ?, terminos_condiciones = ?, 
+        pie_pagina = ?, validez_dias = ?, color_primario = ?, color_secundario = ?, 
+        logo_url = ?, mostrar_logo = ?
+        WHERE id = 1
+      `, [nombre_empresa, direccion_empresa, telefono_empresa, email_empresa, 
+          encabezado_presupuesto, descripcion_empresa, terminos_condiciones, pie_pagina, validez_dias,
+          color_primario, color_secundario, logo_url, mostrar_logo]);
+    } else {
+      // Crear nueva configuración
+      await connection.execute(`
+        INSERT INTO configuracion_pdf 
+        (id, nombre_empresa, direccion_empresa, telefono_empresa, email_empresa,
+         encabezado_presupuesto, descripcion_empresa, terminos_condiciones, pie_pagina, validez_dias,
+         color_primario, color_secundario, logo_url, mostrar_logo)
+        VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [nombre_empresa, direccion_empresa, telefono_empresa, email_empresa, 
+          encabezado_presupuesto, descripcion_empresa, terminos_condiciones, pie_pagina, validez_dias,
+          color_primario, color_secundario, logo_url, mostrar_logo]);
+    }
+    
+    await connection.end();
+    res.json({ message: 'Configuración actualizada correctamente' });
+  } catch (error) {
+    console.error('Error actualizando configuración PDF:', error);
+    res.status(500).json({ error: 'Error actualizando configuración' });
+  }
+});
+
+// Ruta para subir logo
+app.post('/api/upload-logo', upload.single('logo'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No se subió ningún archivo' });
+    }
+    
+    // Generar URL del logo
+    const logoUrl = `/uploads/logos/${req.file.filename}`;
+    
+    // Actualizar configuración con el nuevo logo
+    const connection = await connectDB();
+    await connection.execute(`
+      UPDATE configuracion_pdf SET 
+      logo_url = ?, mostrar_logo = TRUE
+      WHERE id = 1
+    `, [logoUrl]);
+    await connection.end();
+    
+    res.json({ 
+      message: 'Logo subido correctamente',
+      logoUrl: logoUrl,
+      filename: req.file.filename
+    });
+  } catch (error) {
+    console.error('Error subiendo logo:', error);
+    res.status(500).json({ error: 'Error subiendo logo' });
+  }
+});
+
+// Ruta para eliminar logo
+app.delete('/api/delete-logo', async (req, res) => {
+  try {
+    // Obtener la configuración actual para saber qué archivo eliminar
+    const connection = await connectDB();
+    const [config] = await connection.execute('SELECT logo_url FROM configuracion_pdf WHERE id = 1');
+    
+    if (config.length > 0 && config[0].logo_url) {
+      const logoPath = path.join(__dirname, config[0].logo_url);
+      
+      // Eliminar archivo físico si existe
+      if (fs.existsSync(logoPath)) {
+        fs.unlinkSync(logoPath);
+      }
+    }
+    
+    // Actualizar configuración para quitar el logo
+    await connection.execute(`
+      UPDATE configuracion_pdf SET 
+      logo_url = NULL, mostrar_logo = FALSE
+      WHERE id = 1
+    `);
+    await connection.end();
+    
+    res.json({ message: 'Logo eliminado correctamente' });
+  } catch (error) {
+    console.error('Error eliminando logo:', error);
+    res.status(500).json({ error: 'Error eliminando logo' });
   }
 });
 
