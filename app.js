@@ -6,7 +6,7 @@ const multer = require('multer');
 const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3002;
 
 // Configuración de multer para uploads
 const storage = multer.diskStorage({
@@ -47,13 +47,17 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Servir 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+
+
 // Configuración de la base de datos
 const dbConfig = {
-  host: 'mysql',
-  user: 'ppuser',
-  password: 'pppass123',
+  host: 'localhost',
+  user: 'root',
+  password: 'root123',
   database: 'ppgarageGastos',
-  port: 3306
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 };
 
 // Función para conectar a la base de datos
@@ -67,98 +71,63 @@ async function connectDB() {
   }
 }
 
+
+
 // Ruta principal - Dashboard
 app.get('/', async (req, res) => {
   try {
     const connection = await connectDB();
     
-    // Obtener parámetros de filtros y ordenamiento
-    const { fechaDesde, fechaHasta, ordenGastos, ordenClientes } = req.query;
+    // Obtener gastos activos (excluyendo los dados de baja)
+    const [gastos] = await connection.execute('SELECT * FROM gastos WHERE estado IS NULL OR estado != "terminado" ORDER BY fecha DESC');
     
-    // Construir query para gastos (solo activos)
-    let gastosQuery = 'SELECT * FROM gastos WHERE estado = "activo"';
-    let gastosParams = [];
-    let whereConditions = [];
+    // Obtener clientes
+    const [clientes] = await connection.execute('SELECT * FROM clientes ORDER BY nombre');
     
-    if (fechaDesde) {
-      whereConditions.push('fecha >= ?');
-      gastosParams.push(fechaDesde);
-    }
-    
-    if (fechaHasta) {
-      whereConditions.push('fecha <= ?');
-      gastosParams.push(fechaHasta);
-    }
-    
-    if (whereConditions.length > 0) {
-      gastosQuery += ' AND ' + whereConditions.join(' AND ');
-    }
-    
-    // Agregar ordenamiento para gastos
-    if (ordenGastos === 'monto_desc') {
-      gastosQuery += ' ORDER BY monto DESC';
-    } else if (ordenGastos === 'monto_asc') {
-      gastosQuery += ' ORDER BY monto ASC';
-    } else {
-      gastosQuery += ' ORDER BY fecha DESC';
-    }
-    
-    // Construir query para clientes
-    let clientesQuery = 'SELECT * FROM clientes';
-    
-    // Agregar ordenamiento para clientes
-    if (ordenClientes === 'monto_desc') {
-      clientesQuery += ' ORDER BY montoCobrado DESC';
-    } else if (ordenClientes === 'monto_asc') {
-      clientesQuery += ' ORDER BY montoCobrado ASC';
-    } else {
-      clientesQuery += ' ORDER BY id DESC';
-    }
-    
-    // Ejecutar consultas
-    const [gastos] = await connection.execute(gastosQuery, gastosParams);
-    const [clientes] = await connection.execute(clientesQuery);
-    
-    // Obtener productos dados de baja con estadísticas de rendimiento
-    const [productosTerminados] = await connection.execute(`
-      SELECT 
-        id, descripcion, monto, lavados_realizados, observaciones, fecha_baja,
-        CASE 
-          WHEN lavados_realizados > 0 THEN ROUND(monto / lavados_realizados, 2)
-          ELSE 0 
-        END as costo_por_lavado
-      FROM gastos 
-      WHERE estado = 'terminado' 
-      ORDER BY fecha_baja DESC
-    `);
+    // Obtener productos terminados
+    const [productosTerminados] = await connection.execute('SELECT * FROM gastos WHERE estado = "terminado" ORDER BY fecha_baja DESC');
     
     // Obtener máquinas
-    const [maquinas] = await connection.execute('SELECT * FROM gastos_maquinas ORDER BY fecha_creacion DESC');
+    const [maquinas] = await connection.execute('SELECT * FROM gastos_maquinas ORDER BY fecha_compra DESC');
     
     // Obtener precios de servicios
     const [preciosServicios] = await connection.execute('SELECT * FROM precios_servicios WHERE activo = TRUE ORDER BY nombre_servicio');
     
-    // Calcular totales (siempre con todos los datos, sin filtros)
-    const [totalGastos] = await connection.execute('SELECT SUM(monto) as total FROM gastos WHERE estado = "activo"');
-    const [totalMaquinas] = await connection.execute('SELECT SUM(precio) as total FROM gastos_maquinas');
-    const [totalIngresos] = await connection.execute('SELECT SUM(montoCobrado) as total FROM clientes');
+    // Calcular totales
+    const totalGastos = gastos.reduce((total, gasto) => total + parseFloat(gasto.monto || 0), 0);
+    const totalMaquinas = maquinas.reduce((total, maquina) => total + parseFloat(maquina.precio || 0), 0);
+    const totalIngresos = clientes.reduce((total, cliente) => total + parseFloat(cliente.montoCobrado || 0), 0);
     
     await connection.end();
     
-    res.render('dashboard', {
+    const dashboardData = {
       gastos,
       clientes,
       productosTerminados,
       maquinas,
       preciosServicios,
-      totalGastos: totalGastos[0].total || 0,
-      totalMaquinas: totalMaquinas[0].total || 0,
-      totalIngresos: totalIngresos[0].total || 0,
-      filtros: { fechaDesde, fechaHasta, ordenGastos, ordenClientes }
-    });
+      totalGastos,
+      totalMaquinas,
+      totalIngresos,
+      filtros: { fechaDesde: null, fechaHasta: null, ordenGastos: null, ordenClientes: null }
+    };
+    
+    res.render('dashboard', dashboardData);
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).send('Error del servidor');
+    console.error('Error cargando dashboard:', error);
+    // Fallback con datos vacíos si hay error de DB
+    const dashboardData = {
+      gastos: [],
+      clientes: [],
+      productosTerminados: [],
+      maquinas: [],
+      preciosServicios: [],
+      totalGastos: 0,
+      totalMaquinas: 0,
+      totalIngresos: 0,
+      filtros: { fechaDesde: null, fechaHasta: null, ordenGastos: null, ordenClientes: null }
+    };
+    res.render('dashboard', dashboardData);
   }
 });
 
@@ -294,6 +263,7 @@ app.post('/maquinas', async (req, res) => {
     const { nombre, marca, modelo, precio, fecha_compra, garantia_meses, estado, observaciones } = req.body;
     const connection = await connectDB();
     
+    // Solo insertar en tabla de máquinas (NO en gastos)
     await connection.execute(
       'INSERT INTO gastos_maquinas (nombre, marca, modelo, precio, fecha_compra, garantia_meses, estado, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [nombre, marca || null, modelo || null, precio, fecha_compra, garantia_meses || null, estado, observaciones || null]
@@ -648,3 +618,6 @@ app.delete('/api/delete-logo', async (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);
 });
+
+
+
