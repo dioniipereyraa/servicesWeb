@@ -6,6 +6,8 @@
     <title>PPGarage - Gestión</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <style>
         .card-header {
             background: linear-gradient(45deg, #007bff, #6610f2);
@@ -31,6 +33,22 @@
             text-decoration: line-through;
             opacity: 0.6;
             background-color: #f8f9fa;
+        }
+        .spin {
+        animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress {
+            height: 20px;
+        }
+
+        .progress-bar {
+            transition: width 0.3s ease;
         }
     </style>
 </head>
@@ -133,7 +151,70 @@
                 </ul>
             </div>
         </div>
-
+        <!-- Nueva sección: Subir Factura (OCR) -->
+        <div class="row mt-4 mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-receipt"></i> Subir Factura (OCR)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="facturaFile" class="form-label">Seleccionar imagen de factura:</label>
+                                <input type="file" class="form-control" id="facturaFile" accept="image/*">
+                                <small class="text-muted">Formatos: JPG, PNG. Tamaño máx: 10MB</small>
+                                
+                                <div class="mt-3" id="facturaPreview" style="display: none;">
+                                    <img id="facturaImg" style="max-width: 100%; max-height: 300px; border: 1px solid #ddd; border-radius: 5px;" alt="Vista previa">
+                                </div>
+                                
+                                <button type="button" class="btn btn-primary mt-3" id="procesarFactura" disabled>
+                                    <i class="bi bi-eye"></i> Procesar con OCR
+                                </button>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div id="ocrProgress" style="display: none;">
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-gear-fill spin"></i> Procesando imagen...
+                                        <div class="progress mt-2">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated" id="ocrProgressBar" style="width: 0%">0%</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="ocrResultados" style="display: none;">
+                                    <h6><i class="bi bi-check-circle text-success"></i> Datos extraídos:</h6>
+                                    <div class="alert alert-success">
+                                        <p><strong>💰 Importe detectado:</strong> $<span id="importeDetectado">-</span></p>
+                                        <p><strong>📝 Concepto sugerido:</strong> <span id="conceptoSugerido">-</span></p>
+                                        <p><strong>📅 Fecha detectada:</strong> <span id="fechaDetectada">-</span></p>
+                                    </div>
+                                    
+                                    <div class="d-grid gap-2 d-md-block">
+                                        <button type="button" class="btn btn-success" id="confirmarGasto">
+                                            <i class="bi bi-check-circle"></i> Agregar a Gastos
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" id="editarAntes">
+                                            <i class="bi bi-pencil"></i> Editar Antes
+                                        </button>
+                                        <button type="button" class="btn btn-outline-info btn-sm" id="verTextoCompleto">
+                                            <i class="bi bi-eye"></i> Ver Texto
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div id="textoCompleto" style="display: none;" class="mt-3">
+                                    <h6>📄 Texto completo extraído:</h6>
+                                    <textarea class="form-control" id="textoOcr" rows="6" readonly style="font-family: monospace; font-size: 12px;"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!-- Contenido de las pestañas -->
         <div class="tab-content" id="mainTabsContent">
             <!-- Pestaña Dashboard -->
@@ -2502,6 +2583,518 @@
             // Cargar configuración al inicio si estamos en la pestaña de configuración
             if (window.location.hash === '#configuracion') {
                 cargarConfiguracionPDF();
+            }
+            // =================== FUNCIONALIDAD OCR DE FACTURAS ===================
+
+            // Manejar selección de archivo de factura
+            document.getElementById('facturaFile').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // Validar tipo de archivo
+                    if (!file.type.startsWith('image/')) {
+                        alert('Por favor selecciona solo archivos de imagen (JPG, PNG)');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    // Validar tamaño (10MB máximo)
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('El archivo es muy grande. Máximo 10MB.');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('facturaImg').src = e.target.result;
+                        document.getElementById('facturaPreview').style.display = 'block';
+                        document.getElementById('procesarFactura').disabled = false;
+                        
+                        // Limpiar resultados anteriores
+                        document.getElementById('ocrResultados').style.display = 'none';
+                        document.getElementById('textoCompleto').style.display = 'none';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Función para mejorar la imagen antes del OCR
+            // Extraer importe (patrones mejorados)
+            // Función mejorada para procesar imágenes de facturas
+            async function mejorarImagenParaOCR(imgElement) {
+                return new Promise((resolve) => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Escalar la imagen para mejor resolución
+                    const escala = Math.min(2000 / imgElement.naturalWidth, 2000 / imgElement.naturalHeight, 3);
+                    canvas.width = imgElement.naturalWidth * escala;
+                    canvas.height = imgElement.naturalHeight * escala;
+                    
+                    // Activar suavizado
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    
+                    // Dibujar imagen escalada
+                    ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+                    
+                    // Obtener datos de píxeles
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+                    
+                    // Paso 1: Convertir a escala de grises y ajustar gamma
+                    for (let i = 0; i < data.length; i += 4) {
+                        const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+                        
+                        // Corrección gamma para mejorar contraste
+                        const corrected = Math.pow(gray / 255, 0.7) * 255;
+                        
+                        data[i] = corrected;
+                        data[i + 1] = corrected;
+                        data[i + 2] = corrected;
+                    }
+                    
+                    ctx.putImageData(imageData, 0, 0);
+                    
+                    // Paso 2: Aplicar filtro de sharpening
+                    const sharpenKernel = [
+                        0, -1, 0,
+                        -1, 5, -1,
+                        0, -1, 0
+                    ];
+                    
+                    const sharpened = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const originalData = imageData.data.slice();
+                    
+                    for (let y = 1; y < canvas.height - 1; y++) {
+                        for (let x = 1; x < canvas.width - 1; x++) {
+                            let r = 0, g = 0, b = 0;
+                            
+                            for (let ky = -1; ky <= 1; ky++) {
+                                for (let kx = -1; kx <= 1; kx++) {
+                                    const idx = ((y + ky) * canvas.width + (x + kx)) * 4;
+                                    const kernelIdx = (ky + 1) * 3 + (kx + 1);
+                                    const weight = sharpenKernel[kernelIdx];
+                                    
+                                    r += originalData[idx] * weight;
+                                    g += originalData[idx + 1] * weight;
+                                    b += originalData[idx + 2] * weight;
+                                }
+                            }
+                            
+                            const idx = (y * canvas.width + x) * 4;
+                            sharpened.data[idx] = Math.max(0, Math.min(255, r));
+                            sharpened.data[idx + 1] = Math.max(0, Math.min(255, g));
+                            sharpened.data[idx + 2] = Math.max(0, Math.min(255, b));
+                        }
+                    }
+                    
+                    ctx.putImageData(sharpened, 0, 0);
+                    
+                    // Paso 3: Umbralización adaptativa mejorada
+                    const finalData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const pixels = finalData.data;
+                    
+                    // Calcular umbral dinámico por regiones
+                    const blockSize = 15;
+                    for (let y = 0; y < canvas.height; y += blockSize) {
+                        for (let x = 0; x < canvas.width; x += blockSize) {
+                            let sum = 0, count = 0;
+                            
+                            // Calcular promedio del bloque
+                            for (let by = y; by < Math.min(y + blockSize, canvas.height); by++) {
+                                for (let bx = x; bx < Math.min(x + blockSize, canvas.width); bx++) {
+                                    const idx = (by * canvas.width + bx) * 4;
+                                    sum += pixels[idx];
+                                    count++;
+                                }
+                            }
+                            
+                            const umbral = (sum / count) * 0.85; // 15% más estricto
+                            
+                            // Aplicar umbralización al bloque
+                            for (let by = y; by < Math.min(y + blockSize, canvas.height); by++) {
+                                for (let bx = x; bx < Math.min(x + blockSize, canvas.width); bx++) {
+                                    const idx = (by * canvas.width + bx) * 4;
+                                    const valor = pixels[idx] > umbral ? 255 : 0;
+                                    
+                                    pixels[idx] = valor;
+                                    pixels[idx + 1] = valor;
+                                    pixels[idx + 2] = valor;
+                                }
+                            }
+                        }
+                    }
+                    
+                    ctx.putImageData(finalData, 0, 0);
+                    resolve(canvas);
+                });
+            }
+
+            // Procesar OCR cuando se hace clic en el botón
+            document.getElementById('procesarFactura').addEventListener('click', async function() {
+                const img = document.getElementById('facturaImg');
+                const progressDiv = document.getElementById('ocrProgress');
+                const progressBar = document.getElementById('ocrProgressBar');
+                
+                progressDiv.style.display = 'block';
+                this.disabled = true;
+                this.innerHTML = '<i class="bi bi-hourglass-split"></i> Procesando...';
+                
+                try {
+                    // Mejorar la imagen antes del OCR
+                    const imagenMejorada = await mejorarImagenParaOCR(img);
+                    mostrarImagenProcesada(imagenMejorada); // Agregar esta línea
+
+                    
+                    // Configuración mejorada de Tesseract
+                    const worker = await Tesseract.createWorker('spa', 1, {
+                        logger: m => {
+                            if (m.status === 'recognizing text') {
+                                const progress = Math.round(m.progress * 100);
+                                progressBar.style.width = progress + '%';
+                                progressBar.textContent = progress + '%';
+                            }
+                        }
+                    });
+                    
+                    // Configuraciones mejoradas para OCR
+                    await worker.setParameters({
+                        tessedit_char_whitelist: '0123456789.,$/ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzáéíóúñÁÉÍÓÚÑ :()-',
+                        tessedit_pageseg_mode: Tesseract.PSM.SPARSE_BLOCK,
+                        tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY,
+                        preserve_interword_spaces: '1',
+                        user_defined_dpi: '300',
+                        textord_really_old_xheight: '1',
+                        textord_min_xheight: '10',
+                        classify_enable_learning: '0',
+                        classify_enable_adaptive_matcher: '1'
+                    });
+                    
+                    const { data: { text } } = await worker.recognize(imagenMejorada);
+                    await worker.terminate();
+                    
+                    // Procesar el texto extraído
+                    procesarTextoOCR(text);
+                    
+                } catch (error) {
+                    console.error('Error en OCR:', error);
+                    alert('Error al procesar la imagen. Consejos:\n- Usa buena iluminación\n- Imagen clara y enfocada\n- Texto horizontal\n- Fondo contrastado');
+                } finally {
+                    progressDiv.style.display = 'none';
+                    this.disabled = false;
+                    this.innerHTML = '<i class="bi bi-eye"></i> Procesar con OCR';
+                }
+            });
+
+            // Procesar y extraer datos del texto OCR
+            function procesarTextoOCR(texto) {
+                console.log('Texto extraído:', texto);
+                
+                // Mostrar texto completo
+                document.getElementById('textoOcr').value = texto;
+                
+                // Extraer importe (patrones mejorados)
+                // Patrones específicos para facturas argentinas como la tuya
+                const importePatterns = [
+                    // Patrón principal: TOTAL seguido de número
+                    /TOTAL\s*([0-9]{1,8}(?:\.[0-9]{2})?)/gi,
+                    
+                    // Patrones de totales específicos
+                    /(?:TOTAL|IMPORTE\s+TOTAL)\s*([0-9]{1,8}\.[0-9]{2})/gi,
+                    
+                    // Números grandes al final de líneas (probablemente totales)
+                    /([0-9]{4,8}\.[0-9]{2})\s*$/gm,
+                    
+                    // Números grandes con formato específico de esta factura
+                    /\b([0-9]{5,8}\.[0-9]{2})\b/g,
+                    
+                    // Fallback: números grandes
+                    /\b([0-9]{4,8})\b/g
+                ];
+
+                let importeDetectado = null;
+                let importes = [];
+
+                console.log('=== ANÁLISIS DE TEXTO ===');
+                console.log(texto);
+                console.log('=========================');
+
+                // Buscar específicamente la palabra TOTAL
+                const lineasTexto = texto.split('\n');
+                for (let i = 0; i < lineasTexto.length; i++) {
+                    const linea = lineasTexto[i].trim();
+                    console.log(`Línea ${i}: "${linea}"`);
+                    
+                    // Buscar líneas que contengan TOTAL
+                    if (linea.toUpperCase().includes('TOTAL')) {
+                        console.log(`¡Línea con TOTAL encontrada!: "${linea}"`);
+                        
+                        // Extraer números de esta línea
+                        const numerosEnLinea = linea.match(/([0-9]{3,8}(?:\.[0-9]{2})?)/g);
+                        if (numerosEnLinea) {
+                            console.log('Números en línea TOTAL:', numerosEnLinea);
+                            for (const num of numerosEnLinea) {
+                                const valor = parseFloat(num);
+                                if (!isNaN(valor) && valor >= 100) {
+                                    importes.push({
+                                        valor: valor,
+                                        texto: num,
+                                        original: linea,
+                                        prioridad: 0, // Máxima prioridad para líneas con TOTAL
+                                        fuente: 'TOTAL_LINE'
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // También buscar con los patrones regulares
+                for (let i = 0; i < importePatterns.length; i++) {
+                    const pattern = importePatterns[i];
+                    const matches = [...texto.matchAll(pattern)];
+                    
+                    for (const match of matches) {
+                        const numeroStr = match[1];
+                        const numero = parseFloat(numeroStr);
+                        
+                        if (!isNaN(numero) && numero >= 100 && numero <= 100000000) {
+                            importes.push({
+                                valor: numero,
+                                texto: numeroStr,
+                                original: match[0],
+                                prioridad: i + 1,
+                                fuente: 'REGEX_' + i
+                            });
+                        }
+                    }
+                }
+
+                console.log('=== TODOS LOS IMPORTES ENCONTRADOS ===');
+                importes.forEach((imp, idx) => {
+                    console.log(`${idx + 1}. ${imp.texto} (${imp.valor}) - Prioridad: ${imp.prioridad} - Fuente: ${imp.fuente}`);
+                    console.log(`   Original: "${imp.original}"`);
+                });
+
+                if (importes.length > 0) {
+                    // Ordenar por prioridad, luego por valor más alto
+                    importes.sort((a, b) => {
+                        if (a.prioridad !== b.prioridad) return a.prioridad - b.prioridad;
+                        return b.valor - a.valor;
+                    });
+                    
+                    importeDetectado = importes[0].texto;
+                    console.log('=== IMPORTE SELECCIONADO ===');
+                    console.log(`Texto: ${importeDetectado}`);
+                    console.log(`Valor: ${importes[0].valor}`);
+                    console.log(`Fuente: ${importes[0].fuente}`);
+                }
+                // Buscar importes con diferentes estrategias
+                for (let i = 0; i < importePatterns.length; i++) {
+                    const pattern = importePatterns[i];
+                    const matches = [...texto.matchAll(pattern)];
+                    
+                    for (const match of matches) {
+                        let numeroStr = match[1];
+                        let numero;
+                        
+                        // Intentar diferentes formatos
+                        if (numeroStr.includes('.') && numeroStr.includes(',')) {
+                            // Formato: 1.234,56
+                            numero = parseFloat(numeroStr.replace(/\./g, '').replace(',', '.'));
+                        } else if (numeroStr.includes(',') && numeroStr.lastIndexOf(',') === numeroStr.length - 3) {
+                            // Formato: 1,234.56 o 1234,56
+                            numero = parseFloat(numeroStr.replace(',', '.'));
+                        } else if (numeroStr.includes('.') && numeroStr.lastIndexOf('.') === numeroStr.length - 3) {
+                            // Formato: 1234.56
+                            numero = parseFloat(numeroStr);
+                        } else {
+                            // Solo números enteros
+                            numero = parseInt(numeroStr);
+                        }
+
+                        if (!isNaN(numero) && numero >= 50 && numero <= 10000000) {
+                            importes.push({
+                                valor: numero,
+                                texto: numeroStr,
+                                original: match[0],
+                                prioridad: i, // Los primeros patrones tienen mayor prioridad
+                                posicion: match.index
+                            });
+                        }
+                    }
+                }
+                console.log('Importes encontrados:', importes);
+
+                if (importes.length > 0) {
+                    // Ordenar por prioridad, luego por valor (más grande primero)
+                    importes.sort((a, b) => {
+                        if (a.prioridad !== b.prioridad) return a.prioridad - b.prioridad;
+                        return b.valor - a.valor;
+                    });
+                    
+                    importeDetectado = importes[0].texto;
+                    console.log('Importe seleccionado:', importeDetectado, 'Valor:', importes[0].valor);
+                }
+                
+                // Clasificación inteligente de conceptos
+                const conceptoKeywords = {
+                    'Combustible': ['nafta', 'gasoil', 'diesel', 'combustible', 'ypf', 'shell', 'axion', 'estacion'],
+                    'Repuestos Auto': ['repuesto', 'filtro', 'aceite', 'bateria', 'neumatico', 'llanta', 'freno'],
+                    'Insumos Limpieza': ['detergente', 'shampoo', 'cera', 'silicona', 'producto', 'limpieza'],
+                    'Servicios': ['servicio', 'mantenimiento', 'reparacion', 'taller', 'mecanico'],
+                    'Herramientas': ['herramienta', 'llave', 'destornillador', 'martillo', 'taladro'],
+                    'Varios': ['varios', 'general', 'otros']
+                };
+                
+                let conceptoSugerido = 'Gasto General';
+                const textoLower = texto.toLowerCase();
+                
+                for (const [categoria, keywords] of Object.entries(conceptoKeywords)) {
+                    if (keywords.some(keyword => textoLower.includes(keyword))) {
+                        conceptoSugerido = categoria;
+                        break;
+                    }
+                }
+                
+                // Extraer fecha
+                let fechaDetectada = new Date().toISOString().split('T')[0]; // Default: hoy
+                const fechaPatterns = [
+                    /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/g,
+                    /(\d{2,4})[\/\-](\d{1,2})[\/\-](\d{1,2})/g
+                ];
+                
+                for (const pattern of fechaPatterns) {
+                    const matches = [...texto.matchAll(pattern)];
+                    if (matches.length > 0) {
+                        try {
+                            const match = matches[0];
+                            const parts = match[0].split(/[\/\-]/);
+                            let fecha;
+                            
+                            if (parts[0].length === 4) {
+                                // YYYY/MM/DD
+                                fecha = new Date(parts[0], parts[1] - 1, parts[2]);
+                            } else {
+                                // DD/MM/YYYY
+                                fecha = new Date(parts[2], parts[1] - 1, parts[0]);
+                            }
+                            
+                            if (fecha && !isNaN(fecha.getTime())) {
+                                fechaDetectada = fecha.toISOString().split('T')[0];
+                                break;
+                            }
+                        } catch (e) {
+                            console.log('Error parseando fecha:', e);
+                        }
+                    }
+                }
+                
+                // Mostrar resultados
+                document.getElementById('importeDetectado').textContent = importeDetectado || 'No detectado';
+                document.getElementById('conceptoSugerido').textContent = conceptoSugerido;
+                document.getElementById('fechaDetectada').textContent = fechaDetectada;
+                document.getElementById('ocrResultados').style.display = 'block';
+                
+                // Guardar datos para uso posterior
+                window.datosFacturaOCR = {
+                    importe: importeDetectado,
+                    concepto: conceptoSugerido,
+                    fecha: fechaDetectada,
+                    textoCompleto: texto
+                };
+            }
+
+            // Confirmar y agregar gasto automáticamente
+            document.getElementById('confirmarGasto').addEventListener('click', async function() {
+                const datos = window.datosFacturaOCR;
+                if (!datos || !datos.importe) {
+                    alert('No se pudo detectar el importe. Usa "Editar Antes" para ingresar manualmente.');
+                    return;
+                }
+                
+                const confirmar = confirm(`¿Confirmar agregar gasto?\n\nConcepto: ${datos.concepto}\nImporte: $${datos.importe}\nFecha: ${datos.fecha}`);
+                if (!confirmar) return;
+                
+                try {
+                    const response = await fetch('/agregar-gasto', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: new URLSearchParams({
+                            descripcion: `${datos.concepto} (OCR)`,
+                            monto: parseFloat(datos.importe.replace(',', '.')),
+                            cantidadEnLts: 1,
+                            fecha: datos.fecha
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        alert('¡Gasto agregado exitosamente desde la factura!');
+                        window.location.reload();
+                    } else {
+                        throw new Error('Error al agregar gasto');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error al agregar el gasto. Intenta editando manualmente.');
+                }
+            });
+
+            // Editar datos antes de confirmar
+            document.getElementById('editarAntes').addEventListener('click', function() {
+                const datos = window.datosFacturaOCR;
+                if (datos) {
+                    // Pre-llenar formulario de gastos
+                    document.getElementById('descripcion').value = datos.concepto;
+                    document.getElementById('monto').value = datos.importe || '';
+                    document.getElementById('fecha').value = datos.fecha;
+                    
+                    // Hacer scroll al formulario
+                    document.getElementById('descripcion').scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center' 
+                    });
+                    document.getElementById('descripcion').focus();
+                    
+                    alert('✅ Formulario pre-llenado con datos de la factura. Revisa antes de guardar.');
+                }
+            });
+
+            // Mostrar/ocultar texto completo
+            document.getElementById('verTextoCompleto').addEventListener('click', function() {
+                const textoDiv = document.getElementById('textoCompleto');
+                if (textoDiv.style.display === 'none') {
+                    textoDiv.style.display = 'block';
+                    this.innerHTML = '<i class="bi bi-eye-slash"></i> Ocultar Texto';
+                } else {
+                    textoDiv.style.display = 'none';
+                    this.innerHTML = '<i class="bi bi-eye"></i> Ver Texto';
+                }
+            });
+            
+            // Función para mostrar imagen procesada (debug)
+            function mostrarImagenProcesada(canvas) {
+                const debugDiv = document.getElementById('facturaPreview');
+                const existingDebug = document.getElementById('imagenProcesada');
+                if (existingDebug) existingDebug.remove();
+                
+                const debugImg = document.createElement('img');
+                debugImg.id = 'imagenProcesada';
+                debugImg.src = canvas.toDataURL();
+                debugImg.style.cssText = 'max-width: 100%; max-height: 200px; border: 2px solid #007bff; margin-top: 10px;';
+                debugImg.title = 'Imagen procesada para OCR';
+                
+                const label = document.createElement('small');
+                label.textContent = 'Imagen procesada:';
+                label.style.display = 'block';
+                label.style.color = '#007bff';
+                label.style.marginTop = '10px';
+                
+                debugDiv.appendChild(label);
+                debugDiv.appendChild(debugImg);
             }
         });
     </script>
