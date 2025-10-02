@@ -13,7 +13,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - ppgarage_mysql_data:/var/lib/mysql
       - ./ppdb.sql:/docker-entrypoint-initdb.d/ppdb.sql
     networks:
       - ppgarage_network
@@ -35,7 +35,8 @@ services:
       - /usr/src/app/node_modules
     command: npm run dev
 volumes:
-  mysql_data:
+  ppgarage_mysql_data:
+    external: true
 
 networks:
   ppgarage_network:
